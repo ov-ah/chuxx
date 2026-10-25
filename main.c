@@ -1,35 +1,24 @@
+
 #include "net.h"
-#include <stdio.h>
-#include <string.h>
+#include "renderer.h"
+#include <curses.h>
 
-#define BUF_SIZE 1024
-
-int main(int argc, char *argv[])
+int main(void)
 {
-    if (argc >= 2 && strcmp(argv[1], "listen") == 0)
-    {
-        int host_fd = host_listen(8080);
-        if (host_fd < 0)
-            return 1;
+	// GameState gs;
+	// gamestate_init(&gs);
+	GameState gs = {0};
+	gs.board[7][4] = (Piece){KING, WHITE};
+	gs.board[0][4] = (Piece){KING, BLACK};
 
-        printf("Listening on port 8080\n");
+	renderer_init();
+	renderer_draw(&gs, -1, -1);
 
-        char buffer[BUF_SIZE];
-        int n = host_recieve(host_fd, buffer, sizeof(buffer));
-        if (n < 0)
-            return 1;
+	int ch;
+	while ((ch = getch()) != 'q')
+		if (ch == KEY_RESIZE)
+			renderer_draw(&gs, -1, -1);
 
-        printf("Recieved %d bytes: %s\n", n, buffer);
-        return 0;
-    }
-    if (argc >= 4 && strcmp(argv[1], "send") == 0)
-    {
-        if (client_send(argv[2], 8080, argv[3]) < 0)
-            return 1;
-
-        printf("Sent.\n");
-        return 0;
-    }
-    fprintf(stderr, "Usage:\n  %s listen\n  %s send <ip> <message>\n", argv[0], argv[0]);
-    return 1;
+	renderer_shutdown();
+	return 1;
 }
