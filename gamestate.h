@@ -15,6 +15,13 @@ typedef enum
 	KING
 } PieceType;
 
+typedef enum
+{
+	WHITE,
+	BLACK,
+	NONE
+} PieceColor;
+
 typedef struct
 {
 	PieceType type;
