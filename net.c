@@ -130,3 +130,36 @@ int client_send(const char *ip, int port, const char *message)
     close(client_fd);
     return 0;
 }
+
+int parse_move(const char *text)
+{
+    size_t len = strlen(text);
+    if (text == NULL || (len != 4 && len != 5))
+    {
+        fprintf(stderr, "Bad text string! Should be in format (from square)(to square)(flags)");
+        return -1;
+    }
+
+    int fr = text[0] - 'a';
+    int fc = text[1] - '1';
+    int tr = text[2] - 'a';
+    int tc = text[3] - '1';
+
+    if (fr < 0 || fr > 7 || fc < 0 || fc > 7 ||
+        tr < 0 || tr > 7 || tc < 0 || tc > 7)
+    {
+        fprintf(stderr, "Parsed bad sqaure!");
+        return -1;
+    }
+
+    char flag = 0;
+    if (len == 5)
+    {
+        flag = text[4];
+        if (flag != 'q')
+        {
+            fprintf(stderr, "Parsed bad flag!");
+            return -1;
+        }
+    }
+}
