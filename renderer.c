@@ -1,3 +1,4 @@
+#include "renderer.h"
 #include <curses.h>
 
 // pieces are black/white
@@ -14,10 +15,8 @@ x x x x x x x x
 R N B Q K B N R
 */
 
-#define ROWS 8
-#define COLS 8
-#define SQ_W 7
-#define SQ_H 3
+#define SQ_W 5
+#define SQ_H 2
 
 #define LABEL_W 2
 #define LABEL_H 1
@@ -28,6 +27,9 @@ R N B Q K B N R
 #define WHITE_PIECE COLOR_WHITE
 #define BLACK_PIECE COLOR_BLACK
 
+static int board_y, board_x;
+static int board_visible = 0; // treat as bool
+
 typedef enum
 {
 	LIGHT,
@@ -36,25 +38,16 @@ typedef enum
 	SHADE_COUNT
 } Shade;
 
-typedef enum
-{
-	WHITE,
-	BLACK,
-	NONE,
-	PCOLOR_COUNT
-} PieceColor;
-
 #define LABEL_PAIR (1 + SHADE_COUNT * 2)
 
-// pair # = 1 + shade*2 + pcolor -> 1..4
-int pair_for(int shade, int pcolor)
+static int pair_for(int shade, int pcolor)
 {
-	if (!pcolor)
+	if (pcolor == NONE)
 		pcolor = WHITE;
 	return 1 + shade * 2 + pcolor;
 }
 
-void init_colors()
+static void init_colors(void)
 {
 	if (!has_colors())
 		return;
@@ -66,7 +59,7 @@ void init_colors()
 		           : (s == DARK) ? DARK_BG
 		                         : SELECTED_BG;
 
-		for (int p = WHITE; p < BLACK; p++)
+		for (int p = WHITE; p <= BLACK; p++)
 		{
 			int fg = (p == WHITE) ? WHITE_PIECE : BLACK_PIECE;
 			init_pair(pair_for(s, p), fg, bg);
@@ -75,7 +68,7 @@ void init_colors()
 	init_pair(LABEL_PAIR, COLOR_YELLOW, COLOR_BLACK);
 }
 
-int square_attr(int row, int col, PieceColor pc, int selected)
+static int square_attr(int row, int col, PieceColor pc, int selected)
 {
 	Shade shade = selected ? SELECTED : ((row + col) % 2 == 0) ? LIGHT : DARK;
 
@@ -86,16 +79,23 @@ int square_attr(int row, int col, PieceColor pc, int selected)
 	return attr;
 }
 
-void fill_rect(int y, int x, int h, int w, chtype attr)
+static void fill_rect(int y, int x, int h, int w, chtype attr)
 {
 	for (int dy = 0; dy < h; dy++)
 		mvhline(y + dy, x, ' ' | attr, w);
 }
 
-void draw_board(void)
+static char piece_glyph(Piece p)
 {
-	int board_w = COLS * SQ_W;
-	int board_h = ROWS * SQ_H;
+	static const char glyphs[] = " PNBRQK";
+	char g = glyphs[p.type];
+	return (p.color == BLACK) ? g + ('a' - 'A') : g;
+}
+
+void renderer_draw(const GameState *gs, int sel_row, int sel_col)
+{
+	int board_w = BOARD_COLS * SQ_W;
+	int board_h = BOARD_ROWS * SQ_H;
 	int total_w = board_w + LABEL_W;
 	int total_h = board_h + LABEL_H;
 
@@ -105,6 +105,7 @@ void draw_board(void)
 
 	if (total_w > term_w || total_h > term_h)
 	{
+		board_visible = 0;
 		mvprintw(0, 0, "term too small: need %dx%d, have %dx%d", total_w,
 		         total_h, term_w, term_h);
 		refresh();
@@ -113,25 +114,54 @@ void draw_board(void)
 
 	int top = (term_h - total_h) / 2;
 	int left = (term_w - total_w) / 2;
-	int board_y = top;
-	int board_x = left + LABEL_W;
+	board_y = top;
+	board_x = left + LABEL_W;
+	board_visible = 1;
 
-	for (int r = 0; r < ROWS; r++)
-		for (int c = 0; c < COLS; c++)
-			fill_rect(board_y + r * SQ_H, board_x + c * SQ_W, SQ_H, SQ_W,
-			          square_attr(r, c, NONE, false));
+	for (int r = 0; r < BOARD_ROWS; r++)
+	{
+		for (int c = 0; c < BOARD_COLS; c++)
+		{
+			Piece p = gs->board[r][c];
+			int selected = (r == sel_row && c == sel_col);
+			chtype attr = square_attr(r, c, p.color, selected);
+
+			int y = board_y + r * SQ_H;
+			int x = board_x + c * SQ_W;
+			fill_rect(y, x, SQ_H, SQ_W, attr);
+
+			if (p.type != EMPTY)
+				mvaddch(y + SQ_H / 2, x + SQ_W / 2, piece_glyph(p) | attr);
+		}
+	}
 
 	attron(COLOR_PAIR(LABEL_PAIR));
-	for (int r = 0; r < ROWS; r++)
-		mvprintw(board_y + r * SQ_H + SQ_H / 2, left, "%d", ROWS - r);
-	for (int c = 0; c < COLS; c++)
+	for (int r = 0; r < BOARD_ROWS; r++)
+		mvprintw(board_y + r * SQ_H + SQ_H / 2, left, "%d", BOARD_ROWS - r);
+	for (int c = 0; c < BOARD_COLS; c++)
 		mvaddch(board_y + board_h, board_x + c * SQ_W + SQ_W / 2, 'a' + c);
 	attroff(COLOR_PAIR(LABEL_PAIR));
 
 	refresh();
 }
 
-int main()
+int renderer_screen_to_square(int y, int x, int *row, int *col)
+{
+	if (!board_visible)
+		return 0;
+
+	int dy = y - board_y;
+	int dx = x - board_x;
+
+	if (dy < 0 || dx < 0 || dy >= BOARD_ROWS * SQ_H || dx >= BOARD_COLS * SQ_W)
+		return 0;
+
+	*row = dy / SQ_H;
+	*col = dx / SQ_W;
+	return 1;
+}
+
+void renderer_init()
 {
 	initscr();
 	cbreak();
@@ -139,14 +169,6 @@ int main()
 	keypad(stdscr, TRUE);
 	curs_set(0);
 	init_colors();
-
-	draw_board();
-
-	int ch;
-	while ((ch = getch()) != 'q')
-		if (ch == KEY_RESIZE)
-			draw_board();
-
-	endwin();
-	return 0;
 }
+
+void renderer_shutdown() { endwin(); }
