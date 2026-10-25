@@ -6,42 +6,42 @@
 
 typedef enum
 {
-	EMPTY,
-	PAWN,
-	KNIGHT,
-	BISHOP,
-	ROOK,
-	QUEEN,
-	KING
+    EMPTY,
+    PAWN,
+    KNIGHT,
+    BISHOP,
+    ROOK,
+    QUEEN,
+    KING
 } PieceType;
 
 typedef enum
 {
-	WHITE,
-	BLACK,
-	NONE
+    WHITE,
+    BLACK,
+    NONE
 } PieceColor;
 
 typedef struct
 {
-	PieceType type;
-	PieceColor color;
+    PieceType type;
+    PieceColor color;
 } Piece;
 
 typedef struct
 {
-	int from_row, from_col;
-	int to_row, to_col;
-	PieceType promo; // only for pawn promotion
+    int from_row, from_col;
+    int to_row, to_col;
+    PieceType promo; // only for pawn promotion
 } Move;
 
 typedef struct
 {
-	Piece board[BOARD_ROWS][BOARD_COLS];
-	PieceColor to_move;
-	int castle_wk, castle_wq; // treat as bool: white king/queen castle allowed?
-	int castle_bk, castle_bq; // same for black
-	int ep_row, ep_col;
+    Piece board[BOARD_ROWS][BOARD_COLS];
+    PieceColor to_move;
+    int castle_wk, castle_wq; // treat as bool: white king/queen castle allowed?
+    int castle_bk, castle_bq; // same for black
+    int ep_row, ep_col;
 } GameState;
 
 void gamestate_init(GameState *gs);
