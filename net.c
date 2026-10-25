@@ -94,7 +94,7 @@ int client_send(const char *ip, int port, const char *message)
     address.sin_family = AF_INET;
     address.sin_port = htons(PORT);
 
-    int result = inet_pton(AF_INET, ip, &address.sin_addr) <= 0)
+    int result = inet_pton(AF_INET, ip, &address.sin_addr);
     if (result != 1)
     {
         if (result == 0)
