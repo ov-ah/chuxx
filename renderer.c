@@ -35,10 +35,18 @@ static int flipped = 0;
 
 void renderer_set_perspective(PieceColor side) { flipped = (side == BLACK); }
 
+void renderer_screen_delta(int *dr, int *dc)
+{
+	if (flipped)
+		*dc = -*dc;
+	else
+		*dr = -*dr;
+}
+
 static void view_xfrom(int r, int c, int *out_r, int *out_c)
 {
-	*out_r = flipped ? BOARD_ROWS - 1 - r : r;
-	*out_c = flipped ? BOARD_COLS - 1 - c : c;
+	*out_r = flipped ? r : BOARD_ROWS - 1 - r;
+	*out_c = flipped ? c : BOARD_COLS - 1 - c;
 }
 
 typedef enum
