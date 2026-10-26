@@ -4,6 +4,8 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include <poll.h>
+#include <errno.h>
 
 static int clamp(int v, int lo, int hi)
 {
@@ -81,82 +83,99 @@ int main(int argc, char **argv)
     int ch;
     while (1)
     {
-        if (gs.to_move != my_color)
+        renderer_draw(&gs, sel_row, sel_col);
+
+        struct pollfd fds[2] = {
+            {.fd = STDIN_FILENO, .events = POLLIN},
+            {.fd = fd, .events = POLLIN},
+        };
+
+        if (poll(fds, 2, -1) < 0)
         {
-            renderer_draw(&gs, sel_row, sel_col);
+            if (errno == EINTR)
+                continue;
+            break;
+        }
+
+        if (fds[1].revents & (POLLIN | POLLHUP | POLLERR))
+        {
             char buf[16];
             int n = recv_line(fd, buf, sizeof(buf));
             if (n <= 0)
+                break;
+            if (gs.to_move == my_color)
                 break;
             Move om;
             if (!parse_move(buf, &om) || !is_legal(&gs, om))
                 break;
             apply_move(&gs, om);
-            renderer_draw(&gs, sel_row, sel_col);
             continue;
         }
 
-        ch = getch();
-        if (ch == 'q')
-            break;
-        int dr = 0, dc = 0;
-        switch (ch)
+        if (fds[0].revents & POLLIN)
         {
-            case KEY_UP:
-            case 'k':
-                dr = -1;
+            ch = getch();
+            if (ch == 'q')
                 break;
-            case KEY_DOWN:
-            case 'j':
-                dr = 1;
-                break;
-            case KEY_LEFT:
-            case 'h':
-                dc = 1;
-                break;
-            case KEY_RIGHT:
-            case 'l':
-                dc = -1;
-                break;
-            case KEY_ENTER:
-            case '\n':
-            case '\r':
-                if (!mov_state)
-                {
-                    mov_row = sel_row;
-                    mov_col = sel_col;
-                    mov_state = 1;
-                    break;
-                }
-                {
-                    Move mov = {mov_row, mov_col, sel_row, sel_col, EMPTY};
-                    mov_state = 0;
-                    if (is_legal(&gs, mov))
-                    {
-                        apply_move(&gs, mov);
-                        char mov_str[8];
-                        move_to_string(mov, mov_str);
-                        if (send_line(fd, mov_str) < 0)
-                            goto done;
-                    }
-                }
-                break;
-                // TODO: update renderer_draw to select more than one ro
-            case KEY_RESIZE:
-                break;
-            default:
-                continue;
-        }
 
-        if (dr || dc)
-        {
-            renderer_screen_delta(&dr, &dc);
-            sel_row += dr;
-            sel_col += dc;
-            sel_row = clamp(sel_row, 0, BOARD_ROWS - 1);
-            sel_col = clamp(sel_col, 0, BOARD_COLS - 1);
+            if (gs.to_move != my_color)
+                continue;
+
+            int dr = 0, dc = 0;
+            switch (ch)
+            {
+                case KEY_UP:
+                case 'k':
+                    dr = -1;
+                    break;
+                case KEY_DOWN:
+                case 'j':
+                    dr = 1;
+                    break;
+                case KEY_LEFT:
+                case 'h':
+                    dc = 1;
+                    break;
+                case KEY_RIGHT:
+                case 'l':
+                    dc = -1;
+                    break;
+                case KEY_ENTER:
+                case '\n':
+                case '\r':
+                    if (!mov_state)
+                    {
+                        mov_row = sel_row;
+                        mov_col = sel_col;
+                        mov_state = 1;
+                        break;
+                    }
+                    {
+                        Move mov = {mov_row, mov_col, sel_row, sel_col, EMPTY};
+                        mov_state = 0;
+                        if (is_legal(&gs, mov))
+                        {
+                            apply_move(&gs, mov);
+                            char mov_str[8];
+                            move_to_string(mov, mov_str);
+                            if (send_line(fd, mov_str) < 0)
+                                goto done;
+                        }
+                    }
+                    break;
+                case KEY_RESIZE:
+                    break;
+                default:
+                    continue;
+            }
+
+            if (dr || dc)
+            {
+                renderer_screen_delta(&dr, &dc);
+                sel_row = clamp(sel_row + dr, 0, BOARD_ROWS - 1);
+                sel_col = clamp(sel_col + dc, 0, BOARD_COLS - 1);
+            }
         }
-        renderer_draw(&gs, sel_row, sel_col);
     }
 done:
     renderer_shutdown();
