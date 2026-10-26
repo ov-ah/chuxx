@@ -2,7 +2,7 @@
 
 multiplayer chess in almost any unix compliant terminal, with networking. written in pure C with ncurses.
 
-**2nd place winner at Hacktoberfest 2026 × QuackHacks**
+**[2nd place winner at Hacktoberfest 2026 × QuackHacks](https://github.com/ov-ah/chuxx/tree/hacktoberfest)** 
 
 ## building
 
