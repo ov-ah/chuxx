@@ -45,7 +45,7 @@ typedef struct
 } GameState;
 
 void gamestate_init(GameState *gs);
-void parse_move(const char *s, Move *m);
+int parse_move(const char *s, Move *m);
 void move_to_string(Move m, char *buf);
 void apply_move(GameState *gs, Move m);
 int is_legal(const GameState *gs, Move m); // treat as bool

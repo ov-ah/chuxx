@@ -33,25 +33,25 @@ void gamestate_init(GameState *gs)
     gs->ep_col = -1;
 }
 
-void parse_move(const char *s, Move *m)
+int parse_move(const char *s, Move *m)
 {
     size_t len = strlen(s);
     if (s == NULL || (len != 4 && len != 5))
     {
         fprintf(stderr, "Bad text string! Should be in format (from square)(to square)(flags)\n");
-        return;
+        return 0;
     }
 
-    int fr = s[0] - 'a';
-    int fc = s[1] - '1';
-    int tr = s[2] - 'a';
-    int tc = s[3] - '1';
+    int fc = s[0] - 'a';
+    int fr = s[1] - '1';
+    int tc = s[2] - 'a';
+    int tr = s[3] - '1';
 
     if (fr < 0 || fr > 7 || fc < 0 || fc > 7 ||
         tr < 0 || tr > 7 || tc < 0 || tc > 7)
     {
         fprintf(stderr, "Parsed bad sqaure!\n");
-        return;
+        return 0;
     }
 
     PieceType promo = EMPTY; // no promotion by default
@@ -73,7 +73,7 @@ void parse_move(const char *s, Move *m)
                 break;
             default:
                 fprintf(stderr, "Parsed bad flag!\n");
-                return;
+                return 0;
         }
     }
     m->from_row = fr;
@@ -81,6 +81,7 @@ void parse_move(const char *s, Move *m)
     m->to_row = tr;
     m->to_col = tc;
     m->promo = promo;
+    return 1;
 }
 
 void move_to_string(Move m, char *buf)
