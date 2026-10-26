@@ -32,6 +32,7 @@ R N B Q K B N R
 static int board_y, board_x;
 static int board_visible = 0; // treat as bool
 static int flipped = 0;
+char status_line[STATUS_LEN] = "";
 
 void renderer_set_perspective(PieceColor side) { flipped = (side == BLACK); }
 
@@ -139,17 +140,9 @@ void renderer_draw(const GameState *gs, int sel_row, int sel_col)
 	board_x = left + LABEL_W;
 	board_visible = 1;
 
-	const char *turn = (gs->to_move == WHITE) ? "White" : "Black";
-	PieceColor me = flipped ? BLACK : WHITE;
-	const char *who = (gs->to_move == me) ? "your move" : "waiting...";
 	attron(COLOR_PAIR(STATUS_PAIR) | A_DIM);
-	mvprintw(top, board_x, "%s to move(%s)", turn, who);
-	attroff(A_DIM);
-
-	static const char mark[] = "~ chuxx ~";
-	attron(A_BOLD);
-	mvprintw(top, board_x + board_w - (int)(sizeof mark - 1), "%s", mark);
-	attroff(COLOR_PAIR(STATUS_PAIR) | A_BOLD);
+	mvprintw(top, board_x, "%.*s ~ chuxx ~", board_w, status_line);
+	attroff(COLOR_PAIR(STATUS_PAIR) | A_DIM);
 
 	for (int r = 0; r < BOARD_ROWS; r++)
 	{
