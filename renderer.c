@@ -18,6 +18,8 @@ R N B Q K B N R
 #define SQ_W 5
 #define SQ_H 2
 
+#define STATUS_H 2
+
 #define LABEL_W 2
 #define LABEL_H 1
 
@@ -48,6 +50,7 @@ typedef enum
 } Shade;
 
 #define LABEL_PAIR (1 + SHADE_COUNT * 2)
+#define STATUS_PAIR (LABEL_PAIR + 1)
 
 static int pair_for(int shade, int pcolor)
 {
@@ -75,6 +78,7 @@ static void init_colors(void)
 		}
 	}
 	init_pair(LABEL_PAIR, COLOR_YELLOW, COLOR_BLACK);
+	init_pair(STATUS_PAIR, COLOR_MAGENTA, COLOR_BLACK);
 }
 
 static int square_attr(int row, int col, PieceColor pc, int selected)
@@ -106,7 +110,7 @@ void renderer_draw(const GameState *gs, int sel_row, int sel_col)
 	int board_w = BOARD_COLS * SQ_W;
 	int board_h = BOARD_ROWS * SQ_H;
 	int total_w = board_w + LABEL_W;
-	int total_h = board_h + LABEL_H;
+	int total_h = board_h + LABEL_H + STATUS_H;
 
 	int term_h, term_w;
 	getmaxyx(stdscr, term_h, term_w);
@@ -123,9 +127,21 @@ void renderer_draw(const GameState *gs, int sel_row, int sel_col)
 
 	int top = (term_h - total_h) / 2;
 	int left = (term_w - total_w) / 2;
-	board_y = top;
+	board_y = top + STATUS_H;
 	board_x = left + LABEL_W;
 	board_visible = 1;
+
+	const char *turn = (gs->to_move == WHITE) ? "White" : "Black";
+	PieceColor me = flipped ? BLACK : WHITE;
+	const char *who = (gs->to_move == me) ? "your move" : "waiting...";
+	attron(COLOR_PAIR(STATUS_PAIR) | A_DIM);
+	mvprintw(top, board_x, "%s to move(%s)", turn, who);
+	attroff(A_DIM);
+
+	static const char mark[] = "~ chuxx ~";
+	attron(A_BOLD);
+	mvprintw(top, board_x + board_w - (int)(sizeof mark - 1), "%s", mark);
+	attroff(COLOR_PAIR(STATUS_PAIR) | A_BOLD);
 
 	for (int r = 0; r < BOARD_ROWS; r++)
 	{
