@@ -21,7 +21,7 @@ R N B Q K B N R
 #define LABEL_W 2
 #define LABEL_H 1
 
-#define LIGHT_BG COLOR_GREEN
+#define LIGHT_BG COLOR_RED
 #define DARK_BG COLOR_BLUE
 #define SELECTED_BG COLOR_YELLOW
 #define WHITE_PIECE COLOR_WHITE
@@ -29,6 +29,15 @@ R N B Q K B N R
 
 static int board_y, board_x;
 static int board_visible = 0; // treat as bool
+static int flipped = 0;
+
+void renderer_set_perspective(PieceColor side) { flipped = (side == BLACK); }
+
+static void view_xfrom(int r, int c, int *out_r, int *out_c)
+{
+	*out_r = flipped ? BOARD_ROWS - 1 - r : r;
+	*out_c = flipped ? BOARD_COLS - 1 - c : c;
+}
 
 typedef enum
 {
@@ -126,8 +135,10 @@ void renderer_draw(const GameState *gs, int sel_row, int sel_col)
 			int selected = (r == sel_row && c == sel_col);
 			chtype attr = square_attr(r, c, p.color, selected);
 
-			int y = board_y + r * SQ_H;
-			int x = board_x + c * SQ_W;
+			int sr, sc;
+			view_xfrom(r, c, &sr, &sc);
+			int y = board_y + sr * SQ_H;
+			int x = board_x + sc * SQ_W;
 			fill_rect(y, x, SQ_H, SQ_W, attr);
 
 			if (p.type != EMPTY)
@@ -136,10 +147,18 @@ void renderer_draw(const GameState *gs, int sel_row, int sel_col)
 	}
 
 	attron(COLOR_PAIR(LABEL_PAIR));
-	for (int r = 0; r < BOARD_ROWS; r++)
-		mvprintw(board_y + r * SQ_H + SQ_H / 2, left, "%d", BOARD_ROWS - r);
-	for (int c = 0; c < BOARD_COLS; c++)
-		mvaddch(board_y + board_h, board_x + c * SQ_W + SQ_W / 2, 'a' + c);
+	for (int sr = 0; sr < BOARD_ROWS; sr++)
+	{
+		int r, c;
+		view_xfrom(sr, 0, &r, &c);
+		mvprintw(board_y + sr * SQ_H + SQ_H / 2, left, "%d", BOARD_ROWS - r);
+	}
+	for (int sc = 0; sc < BOARD_COLS; sc++)
+	{
+		int r, c;
+		view_xfrom(0, sc, &r, &c);
+		mvaddch(board_y + board_h, board_x + sc * SQ_W + SQ_W / 2, 'a' + c);
+	}
 	attroff(COLOR_PAIR(LABEL_PAIR));
 
 	refresh();
@@ -156,8 +175,10 @@ int renderer_screen_to_square(int y, int x, int *row, int *col)
 	if (dy < 0 || dx < 0 || dy >= BOARD_ROWS * SQ_H || dx >= BOARD_COLS * SQ_W)
 		return 0;
 
-	*row = dy / SQ_H;
-	*col = dx / SQ_W;
+	int sr = dy / SQ_H;
+	int sc = dx / SQ_W;
+	view_xfrom(sr, sc, row, col);
+
 	return 1;
 }
 
