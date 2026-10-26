@@ -1,4 +1,3 @@
-
 #include "net.h"
 #include "renderer.h"
 #include <curses.h>
@@ -18,6 +17,8 @@ int main(void)
 
 	renderer_init();
 	int sel_row = 7, sel_col = 4;
+	int mov_row = 0, mov_col = 0;
+	int mov_state = 0;
 	renderer_draw(&gs, sel_row, sel_col);
 
 	int ch;
@@ -41,6 +42,14 @@ int main(void)
 		case 'l':
 			sel_col++;
 			break;
+		case KEY_ENTER:
+			if (!mov_state)
+			{
+				mov_row = sel_row;
+				mov_col = sel_col;
+			}
+			parse_move("move", &(Move){mov_row, mov_col, sel_row, sel_col});
+			// TODO: update renderer_draw to select more than one ro
 		case KEY_RESIZE:
 			break;
 		default:
