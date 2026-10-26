@@ -170,13 +170,15 @@ int main(int argc, char **argv)
 					mov_state = 0;
 					if (is_legal(&gs, mov))
 					{
+						set_turn_status(&gs, my_color);
 						apply_move(&gs, mov);
 						char mov_str[8];
 						move_to_string(mov, mov_str);
 						if (send_line(fd, mov_str) < 0)
 							goto done;
 					}
-					set_bad_move_status(mov);
+					else
+						set_bad_move_status(mov);
 				}
 				break;
 			case KEY_RESIZE:
