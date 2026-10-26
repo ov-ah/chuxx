@@ -112,11 +112,11 @@ int main(int argc, char **argv)
 			break;
 		case KEY_LEFT:
 		case 'h':
-			dc = -1;
+			dc = 1;
 			break;
 		case KEY_RIGHT:
 		case 'l':
-			dc = 1;
+			dc = -1;
 			break;
 		case KEY_ENTER:
 		case '\n':
