@@ -1,7 +1,11 @@
-
 #include "net.h"
 #include "renderer.h"
 #include <curses.h>
+
+static int clamp(int v, int lo, int hi)
+{
+	return v < lo ? lo : (v > hi ? hi : v);
+}
 
 int main(void)
 {
@@ -12,12 +16,51 @@ int main(void)
 	gs.board[0][4] = (Piece){KING, BLACK};
 
 	renderer_init();
-	renderer_draw(&gs, -1, -1);
+	int sel_row = 7, sel_col = 4;
+	int mov_row = 0, mov_col = 0;
+	int mov_state = 0;
+	renderer_draw(&gs, sel_row, sel_col);
 
 	int ch;
 	while ((ch = getch()) != 'q')
-		if (ch == KEY_RESIZE)
-			renderer_draw(&gs, -1, -1);
+	{
+		switch (ch)
+		{
+		case KEY_UP:
+		case 'k':
+			sel_row--;
+			break;
+		case KEY_DOWN:
+		case 'j':
+			sel_row++;
+			break;
+		case KEY_LEFT:
+		case 'h':
+			sel_col--;
+			break;
+		case KEY_RIGHT:
+		case 'l':
+			sel_col++;
+			break;
+		case KEY_ENTER:
+			if (!mov_state)
+			{
+				mov_row = sel_row;
+				mov_col = sel_col;
+			}
+			parse_move("move", &(Move){mov_row, mov_col, sel_row, sel_col});
+			// TODO: update renderer_draw to select more than one ro
+		case KEY_RESIZE:
+			break;
+		default:
+			continue;
+		}
+
+		sel_row = clamp(sel_row, 0, BOARD_ROWS - 1);
+		sel_col = clamp(sel_col, 0, BOARD_COLS - 1);
+
+		renderer_draw(&gs, sel_row, sel_col);
+	}
 
 	renderer_shutdown();
 	return 1;

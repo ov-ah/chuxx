@@ -2,7 +2,7 @@ CC = clang
 CFLAGS = -Wall -Wextra -g
 LDLIBS = -lncurses
 
-build/chuxx: main.c renderer.c
+build/chuxx: main.c renderer.c gamestate.c
 	mkdir -p build
 	$(CC) $(CFLAGS) $^ $(LDLIBS) -o $@ 
 
