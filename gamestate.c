@@ -38,19 +38,19 @@ void parse_move(const char *s, Move *m)
     size_t len = strlen(s);
     if (s == NULL || (len != 4 && len != 5))
     {
-        fprintf(stderr, "Bad text string! Should be in format (from square)(to square)(flags)");
+        fprintf(stderr, "Bad text string! Should be in format (from square)(to square)(flags)\n");
         return;
     }
 
-    int fr = s[0] - '1';
-    int fc = s[1] - 'a';
-    int tr = s[2] - '1';
-    int tc = s[3] - 'a';
+    int fr = s[0] - 'a';
+    int fc = s[1] - '1';
+    int tr = s[2] - 'a';
+    int tc = s[3] - '1';
 
     if (fr < 0 || fr > 7 || fc < 0 || fc > 7 ||
         tr < 0 || tr > 7 || tc < 0 || tc > 7)
     {
-        fprintf(stderr, "Parsed bad sqaure!");
+        fprintf(stderr, "Parsed bad sqaure!\n");
         return;
     }
 
@@ -85,8 +85,8 @@ void parse_move(const char *s, Move *m)
 
 void move_to_string(Move m, char *buf)
 {
-    buf[0] = 'a' + m.from_row;
-    buf[1] = '1' + m.from_col;
+    buf[0] = 'a' + m.from_col;
+    buf[1] = '1' + m.from_row;
     buf[2] = 'a' + m.to_row;
     buf[3] = '1' + m.to_col;
 
@@ -204,4 +204,95 @@ void apply_move(GameState *gs, Move m)
     }
 
     gs->to_move = (gs->to_move == WHITE) ? BLACK : WHITE;
+}
+
+static int path_clear(const GameState *gs, Move m)
+{
+    int step_row, step_col;
+    int row_distance = m.to_row - m.from_row;
+    int col_distance = m.to_col - m.from_col;
+
+    if (row_distance < 0)
+        step_row = -1;
+    else if (row_distance == 0)
+        step_row = 0;
+    else
+        step_row = 1;
+
+    if (col_distance < 0)
+        step_col = -1;
+    else if (col_distance == 0)
+        step_col = 0;
+    else
+        step_col = 1;
+
+    int r = m.from_row + step_row;
+    int c = m.from_col + step_col;
+
+    while (r != m.to_row || c != m.to_col)
+    {
+        if (gs->board[r][c].type != EMPTY)
+            return 0;
+        r += step_row;
+        c += step_col;
+    }
+    return 1;
+}
+
+static int is_pseudo_legal(const GameState *gs, Move m)
+{
+    if (m.from_row < 0 || m.from_row > 7 || m.to_row < 0 || m.to_row > 7 ||
+        m.from_col < 0 || m.from_col > 7 || m.to_col < 0 || m.to_col > 7)
+        return 0;
+
+    if (m.from_row == m.to_row && m.from_col == m.to_col)
+        return 0;
+
+    Piece p = gs->board[m.from_row][m.from_col];
+    Piece target = gs->board[m.to_row][m.to_col];
+
+    if (p.type == EMPTY)
+        return 0;
+
+    if (p.color != gs->to_move)
+        return 0;
+
+    if (target.color == p.color)
+        return 0;
+
+    int dr = m.to_row - m.from_row;
+    int dc = m.to_col - m.from_col;
+    int dir = (p.color == WHITE) ? 1 : -1;
+
+    switch (p.type)
+    {
+        case KNIGHT:
+            return (abs(dr) == 1 && abs(dc) == 2) || (abs(dr) == 2 && abs(dc) == 1);
+        case ROOK:
+            return (dr == 0 || dc == 0) && path_clear(gs, m);
+        case BISHOP:
+            return (abs(dr) == abs(dc)) && path_clear(gs, m);
+        case QUEEN:
+            return ((dr == 0 || dc == 0) || (abs(dr) == abs(dc))) && path_clear(gs, m);
+        case KING:
+            return (abs(dr) <= 1 && abs(dc) <= 1);
+        case PAWN:
+            if (dc == 0 && dr == dir && target.type == EMPTY)
+                return 1;
+            if (dc == 0 && dr == 2 * dir && target.type == EMPTY &&
+                m.from_row == ((p.color == WHITE) ? 1 : 6) && path_clear(gs, m))
+                return 1;
+            if (abs(dc) == 1 && dr == dir && target.type != EMPTY)
+                return 1;
+            if (abs(dc) == 1 && dr == dir && m.to_row == gs->ep_row && m.to_col == gs->ep_col)
+                return 1;
+            return 0;
+        default:
+            return 0;
+    }
+}
+
+int is_legal(const GameState *gs, Move m)
+{
+    return is_pseudo_legal(gs, m);
 }
