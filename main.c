@@ -40,12 +40,21 @@ int main(void)
 			sel_col++;
 			break;
 		case KEY_ENTER:
+		case '\n':
+		case '\r':
 			if (!mov_state)
 			{
 				mov_row = sel_row;
 				mov_col = sel_col;
+				mov_state = 1;
+				break;
 			}
-			parse_move("move", &(Move){mov_row, mov_col, sel_row, sel_col});
+
+			fprintf(stderr, "[MOVE] from: %d, %d\t to: %d, %d", mov_row,
+			        mov_col, sel_row, sel_col);
+			apply_move(&gs, (Move){mov_row, mov_col, sel_row, sel_col});
+			mov_state = 0;
+			break;
 			// TODO: update renderer_draw to select more than one ro
 		case KEY_RESIZE:
 			break;
