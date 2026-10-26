@@ -88,8 +88,8 @@ void move_to_string(Move m, char *buf)
 {
     buf[0] = 'a' + m.from_col;
     buf[1] = '1' + m.from_row;
-    buf[2] = 'a' + m.to_row;
-    buf[3] = '1' + m.to_col;
+    buf[2] = 'a' + m.to_col;
+    buf[3] = '1' + m.to_row;
 
     int i = 4;
     switch (m.promo)
