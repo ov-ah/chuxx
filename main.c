@@ -9,11 +9,8 @@ static int clamp(int v, int lo, int hi)
 
 int main(void)
 {
-	// GameState gs;
-	// gamestate_init(&gs);
-	GameState gs = {0};
-	gs.board[7][4] = (Piece){KING, WHITE};
-	gs.board[0][4] = (Piece){KING, BLACK};
+	GameState gs;
+	gamestate_init(&gs);
 
 	renderer_init();
 	int sel_row = 7, sel_col = 4;
