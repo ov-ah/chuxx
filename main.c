@@ -26,15 +26,19 @@ int main(void)
 		switch (ch)
 		{
 		case KEY_UP:
+		case 'k':
 			sel_row--;
 			break;
 		case KEY_DOWN:
+		case 'j':
 			sel_row++;
 			break;
 		case KEY_LEFT:
+		case 'h':
 			sel_col--;
 			break;
 		case KEY_RIGHT:
+		case 'l':
 			sel_col++;
 			break;
 		case KEY_RESIZE:
