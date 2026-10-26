@@ -1,14 +1,46 @@
 #include "net.h"
 #include "renderer.h"
 #include <curses.h>
+#include <string.h>
 
 static int clamp(int v, int lo, int hi)
 {
 	return v < lo ? lo : (v > hi ? hi : v);
 }
 
-int main(void)
+int main(int argc, char **argv)
 {
+	if (argc < 2)
+	{
+		fprintf(stderr, "usage: chuxx [host|client]\n");
+		return 1;
+	}
+
+	if (strcmp(argv[1], "host") == 0)
+	{
+		// start host
+	}
+	else if (strcmp(argv[1], "client") == 0)
+	{
+		if (argc < 3)
+		{
+			fprintf(stderr, "usage: chuxx client IP:PORT\n");
+			return 1;
+		}
+		// parse argv[2] as IP:PORT
+	}
+	else
+	{
+		fprintf(stderr, "unknown mode '%s'\nusage: chuxx [host|client]\n",
+		        argv[1]);
+		return 1;
+	}
+	if (argc < 2)
+	{
+		fprintf(stderr, "usage: chuxx [host/client]\n");
+		return 1;
+	}
+
 	GameState gs;
 	gamestate_init(&gs);
 
@@ -49,10 +81,12 @@ int main(void)
 				mov_state = 1;
 				break;
 			}
+			Move mov = {mov_row, mov_col, sel_row, sel_col};
+			char mov_str[8];
+			move_to_string(mov, mov_str);
 
-			fprintf(stderr, "[MOVE] from: %d, %d\t to: %d, %d", mov_row,
-			        mov_col, sel_row, sel_col);
-			apply_move(&gs, (Move){mov_row, mov_col, sel_row, sel_col});
+			if (is_legal(&gs, mov) == 1)
+				apply_move(&gs, mov);
 			mov_state = 0;
 			break;
 			// TODO: update renderer_draw to select more than one ro
